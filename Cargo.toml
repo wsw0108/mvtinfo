@@ -1,0 +1,14 @@
+[package]
+name = "mvtinfo"
+version = "0.1.0"
+authors = ["wsw0108 <wsw0108@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+prost = "0.5.0"
+clap = "2.32.0"
+reqwest = "0.9.12"
+protobuf = "2.4.0"
+
+[build-dependencies]
+protoc-rust = "2.4.0"
