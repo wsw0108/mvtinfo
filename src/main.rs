@@ -35,6 +35,7 @@ fn main() {
         reader.read_to_end(&mut bytes).unwrap();
     }
     let tile: Tile = protobuf::parse_from_bytes(bytes.as_ref()).unwrap();
+    println!("Size: {}", bytes.len());
     for layer in tile.get_layers() {
         println!("Layer:");
         println!("\tName: {}", layer.get_name());
