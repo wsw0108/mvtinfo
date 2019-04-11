@@ -11,7 +11,7 @@ mod vector_tile;
 
 fn main() {
     let matches = App::new("mvtinfo")
-        .version("0.1.0")
+        .version("0.1.2")
         .about("Display info about mapbox vector tile")
         .arg(
             Arg::with_name("TARGET")
@@ -36,12 +36,18 @@ fn main() {
     }
     let tile: Tile = protobuf::parse_from_bytes(bytes.as_ref()).unwrap();
     println!("Size: {}", bytes.len());
-    for layer in tile.get_layers() {
+    let layers = tile.get_layers();
+    for layer in layers {
         println!("Layer:");
         println!("\tName: {}", layer.get_name());
         println!("\tVersion: {}", layer.get_version());
         println!("\tExtent: {}", layer.get_extent());
         println!("\tFields: {:?}", layer.get_keys());
         println!("\tCount: {}", layer.get_features().len());
+    }
+    if layers.len() > 1 {
+        let total_count: usize = layers.into_iter().map(|layer| layer.get_features().len()).sum();
+        println!();
+        println!("Total Count: {}", total_count);
     }
 }
