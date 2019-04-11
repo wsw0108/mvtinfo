@@ -5,9 +5,11 @@ use std::path::Path;
 use clap::{App, Arg};
 use reqwest::Url;
 
-use vector_tile::Tile;
+mod mvt {
+    include!(concat!(env!("OUT_DIR"), "/mod.rs"));
+}
 
-mod vector_tile;
+use mvt::vector_tile::Tile;
 
 fn main() {
     let matches = App::new("mvtinfo")
