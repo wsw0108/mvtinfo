@@ -8,6 +8,7 @@ edition = "2018"
 clap = "2.32.0"
 reqwest = "0.9.12"
 protobuf = { version = "2.4.0", features = ["with-bytes"] }
+libflate = "0.1.25"
 
 [build-dependencies]
 protoc-rust = "2.4.0"

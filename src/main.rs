@@ -10,6 +10,7 @@ mod mvt {
 }
 
 use mvt::vector_tile::Tile;
+use libflate::gzip::Decoder;
 
 fn main() {
     let matches = App::new("mvtinfo")
@@ -27,7 +28,7 @@ fn main() {
     let mut bytes: Vec<u8> = Vec::new();
     if target.starts_with("http://") || target.starts_with("https://") {
         let url = Url::parse(target).unwrap();
-        let client = reqwest::ClientBuilder::new().build().unwrap();
+        let client = reqwest::ClientBuilder::new().gzip(true).build().unwrap();
         let mut response = client.get(url).send().unwrap();
         response.read_to_end(&mut bytes).unwrap();
     } else {
@@ -35,9 +36,15 @@ fn main() {
         let file = File::open(path).unwrap();
         let mut reader = BufReader::new(file);
         reader.read_to_end(&mut bytes).unwrap();
+        if bytes.len() > 3 && bytes[0] == 0x1F && bytes[1] == 0x8B && bytes[2] == 0x08 {
+            let mut decoder = Decoder::new(&bytes[..]).unwrap();
+            let mut buf = Vec::new();
+            decoder.read_to_end(&mut buf).unwrap();
+            bytes = buf;
+        }
     }
     let tile: Tile = protobuf::parse_from_bytes(bytes.as_ref()).unwrap();
-    println!("Size: {}", bytes.len());
+    println!("Size(uncompressed): {}", bytes.len());
     let layers = tile.get_layers();
     for layer in layers {
         println!("Layer:");
