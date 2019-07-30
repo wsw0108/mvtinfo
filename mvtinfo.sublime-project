@@ -1,0 +1,22 @@
+{
+	"folders":
+	[
+		{
+			"path": "."
+		}
+	],
+	"settings":
+	{
+		"LSP":
+		{
+			"ra-lsp":
+			{
+				"enabled": false
+			},
+			"rls":
+			{
+				"enabled": true
+			}
+		}
+	}
+}
