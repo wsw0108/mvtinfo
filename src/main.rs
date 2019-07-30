@@ -2,7 +2,8 @@ use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::Path;
 
-use clap::{App, Arg};
+use clap::{Arg};
+use clap::{app_from_crate, crate_version, crate_name, crate_authors, crate_description};
 use reqwest::Url;
 
 mod mvt {
@@ -13,9 +14,7 @@ use mvt::vector_tile::Tile;
 use libflate::gzip::Decoder;
 
 fn main() {
-    let matches = App::new("mvtinfo")
-        .version("0.1.2")
-        .about("Display info about mapbox vector tile")
+    let matches = app_from_crate!()
         .arg(
             Arg::with_name("LIMIT")
                 .long("limit")
