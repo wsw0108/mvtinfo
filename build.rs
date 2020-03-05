@@ -7,7 +7,7 @@ static MOD_RS: &[u8] = b"
 pub mod vector_tile;
 ";
 
-fn main() -> Result<(), Box<std::error::Error>> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let out_dir = std::env::var("OUT_DIR")?;
     protoc_rust::run(protoc_rust::Args {
         out_dir: &out_dir,

@@ -2,16 +2,17 @@ use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::Path;
 
-use clap::{Arg};
-use clap::{app_from_crate, crate_version, crate_name, crate_authors, crate_description};
+use clap::Arg;
+use clap::{app_from_crate, crate_authors, crate_description, crate_name, crate_version};
+use reqwest::blocking::ClientBuilder;
 use reqwest::Url;
 
 mod mvt {
     include!(concat!(env!("OUT_DIR"), "/mod.rs"));
 }
 
-use mvt::vector_tile::Tile;
 use libflate::gzip::Decoder;
+use mvt::vector_tile::Tile;
 
 fn main() {
     let matches = app_from_crate!()
@@ -20,7 +21,7 @@ fn main() {
                 .long("limit")
                 .takes_value(true)
                 .default_value("10")
-                .help("if total feature count < limit, show feature detail")
+                .help("if total feature count < limit, show feature detail"),
         )
         .arg(
             Arg::with_name("TARGET")
@@ -30,12 +31,14 @@ fn main() {
                 .help("target to parse"),
         )
         .get_matches();
-    let limit = String::from(matches.value_of("LIMIT").unwrap()).parse::<usize>().unwrap();
+    let limit = String::from(matches.value_of("LIMIT").unwrap())
+        .parse::<usize>()
+        .unwrap();
     let target = matches.value_of("TARGET").unwrap();
     let mut bytes: Vec<u8> = Vec::new();
     if target.starts_with("http://") || target.starts_with("https://") {
         let url = Url::parse(target).unwrap();
-        let client = reqwest::ClientBuilder::new().gzip(true).build().unwrap();
+        let client = ClientBuilder::new().gzip(true).build().unwrap();
         let mut response = client.get(url).send().unwrap();
         response.read_to_end(&mut bytes).unwrap();
     } else {

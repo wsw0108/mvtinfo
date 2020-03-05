@@ -7,7 +7,7 @@ edition = "2018"
 
 [dependencies]
 clap = "2.32.0"
-reqwest = "0.9.12"
+reqwest = { version = "0.10.4", features = ["gzip", "blocking"] }
 protobuf = { version = "2.4.0", features = ["with-bytes"] }
 libflate = "0.1.25"
 
