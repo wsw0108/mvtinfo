@@ -19,9 +19,17 @@ fn main() {
         .arg(
             Arg::with_name("LIMIT")
                 .long("limit")
+                .short("L")
                 .takes_value(true)
                 .default_value("10")
                 .help("if total feature count < limit, show feature detail"),
+        )
+        .arg(
+            Arg::with_name("GEOMETRY")
+                .long("geometry")
+                .short("G")
+                .takes_value(false)
+                .help("if present, show geometry"),
         )
         .arg(
             Arg::with_name("TARGET")
@@ -34,6 +42,7 @@ fn main() {
     let limit = String::from(matches.value_of("LIMIT").unwrap())
         .parse::<usize>()
         .unwrap();
+    let show_geom = matches.is_present("GEOMETRY");
     let target = matches.value_of("TARGET").unwrap();
     let mut bytes: Vec<u8> = Vec::new();
     if target.starts_with("http://") || target.starts_with("https://") {
@@ -106,12 +115,14 @@ fn main() {
                         }
                     }
                 }
-                println!("\t\tGeometry:");
-                for draw in result {
-                    if draw.0 == 1 {
-                        println!("\t\t\tMoveTo: [{}, {}]", draw.1, draw.2);
-                    } else if draw.0 == 2 {
-                        println!("\t\t\tLineTo: [{}, {}]", draw.1, draw.2);
+                if show_geom {
+                    println!("\t\tGeometry:");
+                    for draw in result {
+                        if draw.0 == 1 {
+                            println!("\t\t\tMoveTo: [{}, {}]", draw.1, draw.2);
+                        } else if draw.0 == 2 {
+                            println!("\t\t\tLineTo: [{}, {}]", draw.1, draw.2);
+                        }
                     }
                 }
                 println!("\t\tProperties:");
