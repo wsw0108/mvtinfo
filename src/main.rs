@@ -47,23 +47,28 @@ fn main() {
     let mut bytes: Vec<u8> = Vec::new();
     if target.starts_with("http://") || target.starts_with("https://") {
         let url = Url::parse(target).unwrap();
-        let client = ClientBuilder::new().gzip(true).build().unwrap();
+        let client = ClientBuilder::new().no_gzip().build().unwrap();
         let mut response = client.get(url).send().unwrap();
         response.read_to_end(&mut bytes).unwrap();
+        if let Err(err) = response.error_for_status() {
+            println!("Error: {}, Message: {}", err, String::from_utf8_lossy(&bytes));
+            return;
+        }
     } else {
         let path = Path::new(target);
         let file = File::open(path).unwrap();
         let mut reader = BufReader::new(file);
         reader.read_to_end(&mut bytes).unwrap();
-        if bytes.len() > 3 && bytes[0] == 0x1F && bytes[1] == 0x8B && bytes[2] == 0x08 {
-            let mut decoder = Decoder::new(&bytes[..]).unwrap();
-            let mut buf = Vec::new();
-            decoder.read_to_end(&mut buf).unwrap();
-            bytes = buf;
-        }
+    }
+    let length = bytes.len();
+    if bytes.len() > 3 && bytes[0] == 0x1F && bytes[1] == 0x8B && bytes[2] == 0x08 {
+        let mut decoder = Decoder::new(&bytes[..]).unwrap();
+        let mut buf = Vec::new();
+        decoder.read_to_end(&mut buf).unwrap();
+        bytes = buf;
     }
     let tile: Tile = protobuf::parse_from_bytes(bytes.as_ref()).unwrap();
-    println!("Size(uncompressed): {}", bytes.len());
+    println!("Size: uncompressed: {}, original: {}", bytes.len(), length);
     let layers = tile.get_layers();
     let total_count: usize = layers.into_iter().map(|layer| layer.get_features().len()).sum();
     for layer in layers {
