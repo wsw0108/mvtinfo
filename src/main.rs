@@ -24,7 +24,15 @@ fn main() {
                 .short("L")
                 .takes_value(true)
                 .default_value("10")
-                .help("if total feature count < limit, show feature detail"),
+                .help("if total feature count <= limit, show feature detail"),
+        )
+        .arg(
+            Arg::with_name("SAMPLES")
+                .long("samples")
+                .short("S")
+                .takes_value(true)
+                .default_value("3")
+                .help("samples per layer to show feature detail, if total feature count > limit"),
         )
         .arg(
             Arg::with_name("GEOMETRY")
@@ -42,6 +50,9 @@ fn main() {
         )
         .get_matches();
     let limit = String::from(matches.value_of("LIMIT").unwrap())
+        .parse::<usize>()
+        .unwrap();
+    let samples = String::from(matches.value_of("SAMPLES").unwrap())
         .parse::<usize>()
         .unwrap();
     let show_geom = matches.is_present("GEOMETRY");
@@ -84,85 +95,88 @@ fn main() {
         println!("\tExtent: {}", layer.get_extent());
         println!("\tFields: {:?}", layer.get_keys());
         println!("\tCount: {}", layer.get_features().len());
-        if total_count <= limit {
-            let keys = layer.get_keys();
-            let values = layer.get_values();
-            let features = layer.get_features();
-            let mut feature_idx = 1;
-            for feature in features {
-                println!("\t    Feature({})", feature_idx);
-                let geometry = feature.get_geometry();
-                let mut result = Vec::new();
-                let mut cx = 0;
-                let mut cy = 0;
-                let mut idx = 0;
-                loop {
-                    if idx >= geometry.len() {
-                        break;
-                    }
+        let keys = layer.get_keys();
+        let values = layer.get_values();
+        let features = layer.get_features();
+        let mut feature_idx = 1;
+        for feature in features {
+            println!("\t    Feature(id={})[{}]", feature.get_id(), feature_idx);
+            let geometry = feature.get_geometry();
+            let mut result = Vec::new();
+            let mut cx = 0;
+            let mut cy = 0;
+            let mut idx = 0;
+            loop {
+                if idx >= geometry.len() {
+                    break;
+                }
 
-                    let command = geometry[idx];
-                    idx += 1;
-                    let id = command & 0x7;
-                    let count = command >> 3;
+                let command = geometry[idx];
+                idx += 1;
+                let id = command & 0x7;
+                let count = command >> 3;
 
-                    if id == 1 || id == 2 {
-                        for _ in 0..count {
-                            let value = geometry[idx] as i32;
-                            idx += 1;
-                            let dx = (value >> 1) ^ (-(value & 1));
+                if id == 1 || id == 2 {
+                    for _ in 0..count {
+                        let value = geometry[idx] as i32;
+                        idx += 1;
+                        let dx = (value >> 1) ^ (-(value & 1));
 
-                            let value = geometry[idx] as i32;
-                            idx += 1;
-                            let dy = (value >> 1) ^ (-(value & 1));
+                        let value = geometry[idx] as i32;
+                        idx += 1;
+                        let dy = (value >> 1) ^ (-(value & 1));
 
-                            let x = cx + dx;
-                            let y = cy + dy;
+                        let x = cx + dx;
+                        let y = cy + dy;
 
-                            cx = x;
-                            cy = y;
+                        cx = x;
+                        cy = y;
 
-                            result.push((id, x, y));
-                        }
+                        result.push((id, x, y));
                     }
                 }
-                if show_geom {
-                    println!("\t\tGeometry:");
-                    for draw in result {
-                        if draw.0 == 1 {
-                            println!("\t\t\tMoveTo: [{}, {}]", draw.1, draw.2);
-                        } else if draw.0 == 2 {
-                            println!("\t\t\tLineTo: [{}, {}]", draw.1, draw.2);
-                        }
+            }
+            if show_geom {
+                println!("\t\tGeometry:");
+                for draw in result {
+                    if draw.0 == 1 {
+                        println!("\t\t\tMoveTo: [{}, {}]", draw.1, draw.2);
+                    } else if draw.0 == 2 {
+                        println!("\t\t\tLineTo: [{}, {}]", draw.1, draw.2);
                     }
                 }
-                println!("\t\tProperties:");
-                let tags = feature.get_tags();
-                for i in 0..tags.len() / 2 {
-                    let idx = i as usize;
-                    let key_idx = tags[idx * 2] as usize;
-                    let value_idx = tags[idx * 2 + 1] as usize;
-                    let key = &keys[key_idx];
-                    let value = &values[value_idx];
-                    if value.has_string_value() {
-                        println!("\t\t\t{}={:?}", key, value.get_string_value());
-                    } else if value.has_float_value() {
-                        println!("\t\t\t{}={:?}", key, value.get_float_value());
-                    } else if value.has_double_value() {
-                        println!("\t\t\t{}={:?}", key, value.get_double_value());
-                    } else if value.has_int_value() {
-                        println!("\t\t\t{}={:?}", key, value.get_int_value());
-                    } else if value.has_uint_value() {
-                        println!("\t\t\t{}={:?}", key, value.get_uint_value());
-                    } else if value.has_sint_value() {
-                        println!("\t\t\t{}={:?}", key, value.get_sint_value());
-                    } else if value.has_bool_value() {
-                        println!("\t\t\t{}={:?}", key, value.get_bool_value());
-                    } else {
-                        println!("\t\t\t{}={:?}", key, value);
-                    }
+            }
+            println!("\t\tProperties:");
+            let tags = feature.get_tags();
+            for i in 0..tags.len() / 2 {
+                let idx = i as usize;
+                let key_idx = tags[idx * 2] as usize;
+                let value_idx = tags[idx * 2 + 1] as usize;
+                let key = &keys[key_idx];
+                let value = &values[value_idx];
+                if value.has_string_value() {
+                    println!("\t\t\t{}={:?}", key, value.get_string_value());
+                } else if value.has_float_value() {
+                    println!("\t\t\t{}={:?}", key, value.get_float_value());
+                } else if value.has_double_value() {
+                    println!("\t\t\t{}={:?}", key, value.get_double_value());
+                } else if value.has_int_value() {
+                    println!("\t\t\t{}={:?}", key, value.get_int_value());
+                } else if value.has_uint_value() {
+                    println!("\t\t\t{}={:?}", key, value.get_uint_value());
+                } else if value.has_sint_value() {
+                    println!("\t\t\t{}={:?}", key, value.get_sint_value());
+                } else if value.has_bool_value() {
+                    println!("\t\t\t{}={:?}", key, value.get_bool_value());
+                } else {
+                    println!("\t\t\t{}={:?}", key, value);
                 }
-                feature_idx += 1;
+            }
+            feature_idx += 1;
+            if total_count > limit {
+                if feature_idx > samples {
+                    break;
+                }
             }
         }
     }
