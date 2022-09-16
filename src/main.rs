@@ -14,6 +14,8 @@ mod mvt {
 use libflate::gzip::Decoder;
 use mvt::vector_tile::Tile;
 
+static APP_USER_AGENT: &str = concat!(crate_name!(), "/", crate_version!());
+
 fn main() {
     let matches = app_from_crate!()
         .arg(
@@ -47,7 +49,11 @@ fn main() {
     let mut bytes: Vec<u8> = Vec::new();
     if target.starts_with("http://") || target.starts_with("https://") {
         let url = Url::parse(target).unwrap();
-        let client = ClientBuilder::new().no_gzip().build().unwrap();
+        let client = ClientBuilder::new()
+            .user_agent(APP_USER_AGENT)
+            .no_gzip()
+            .build()
+            .unwrap();
         let mut response = client.get(url).send().unwrap();
         response.read_to_end(&mut bytes).unwrap();
         if let Err(err) = response.error_for_status() {
